@@ -13,6 +13,13 @@ public func routes(_ router: Router) throws {
     
     // 1
     let acronymsController = AcronymsController()
-    // 2
     try router.register(collection: acronymsController)
+    
+    // 2
+    let usersController = UsersController()
+    do {
+        try router.register(collection: usersController)
+    } catch {
+        print(error)
+    }
 }
