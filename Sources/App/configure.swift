@@ -1,6 +1,7 @@
 import FluentPostgreSQL
 import Vapor
 import Leaf
+import Authentication
 
 public func configure(
     _ config: inout Config,
@@ -9,7 +10,8 @@ public func configure(
     ) throws { 
     try services.register(FluentPostgreSQLProvider())
     try services.register(LeafProvider())
-    
+    try services.register(AuthenticationProvider())
+
     let router = EngineRouter.default()
     try routes(router)
     services.register(router, as: Router.self)
@@ -20,9 +22,7 @@ public func configure(
     middlewares.use(ErrorMiddleware.self)
     services.register(middlewares)
     // Configure a database
-    // 1
     var databases = DatabasesConfig()
-    // 2
     let hostname = Environment.get("DATABASE_HOSTNAME")
         ?? "localhost"
     let username = Environment.get("DATABASE_USER") ?? "vapor"
@@ -43,7 +43,6 @@ public func configure(
     
     let password = Environment.get("DATABASE_PASSWORD")
         ?? "password"
-    // 3
     let databaseConfig = PostgreSQLDatabaseConfig(
         hostname: hostname,
         port: databasePort,
@@ -51,32 +50,25 @@ public func configure(
         database: databaseName,
         password: password)
     
-    // 4
     let database = PostgreSQLDatabase(config: databaseConfig)
-    // 5
     databases.add(database: database, as: .psql)
-    // 6
     services.register(databases)
     
+    let serverConfigure = NIOServerConfig.default(hostname: "0.0.0.0", port: 9090)
+    services.register(serverConfigure)
+    
     var migrations = MigrationConfig()
-    // 4
     migrations.add(model: User.self, database: .psql)
     migrations.add(model: Acronym.self, database: .psql)
     migrations.add(model: Category.self, database: .psql)
-    
-    migrations.add(
-        model: AcronymCategoryPivot.self,
-        database: .psql)
-    
+    migrations.add(model: AcronymCategoryPivot.self, database: .psql)
+    migrations.add(model: Token.self, database: .psql)
+    migrations.add(migration: AdminUser.self, database: .psql)
     services.register(migrations)
     
-    // 1
     var commandConfig = CommandConfig.default()
-    // 2
     commandConfig.useFluentCommands()
-    // 3
     services.register(commandConfig)
-    
     config.prefer(LeafRenderer.self, for: ViewRenderer.self)
 }
 

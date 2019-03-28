@@ -1,52 +1,49 @@
 import Vapor
-// 1
+import Crypto
+
 struct UsersController: RouteCollection {
-    // 2
+
     func boot(router: Router) throws {
-        // 3
         let usersRoute = router.grouped("api", "users")
-        // 4
-        usersRoute.post(User.self, use: createHandler)
-        
-        // 1
         usersRoute.get(use: getAllHandler)
-        // 2
         usersRoute.get(User.parameter, use: getHandler)
+        usersRoute.get(User.parameter, "acronyms", use: getAcronymsHandler)
         
-        usersRoute.get(
-            User.parameter, "acronyms",
-            use: getAcronymsHandler)
+        let basicAuthMiddleware = User.basicAuthMiddleware(using: BCryptDigest())
+        let basicAuthGroup = usersRoute.grouped(basicAuthMiddleware)
+        basicAuthGroup.post("login", use: loginHandler)
+        
+        let tokenAuthMiddleware = User.tokenAuthMiddleware()
+        let guardAuthMiddleware = User.guardAuthMiddleware()
+        let tokenAuthGroup = usersRoute.grouped(tokenAuthMiddleware, guardAuthMiddleware)
+        tokenAuthGroup.post(User.self, use: createHandler)
     }
     
-    // 5
-    func createHandler(
-        _ req: Request,
-        user: User
-        ) throws -> Future<User> {
-        // 6
-        return user.save(on: req)
+    func createHandler(_ req: Request, user: User) throws -> Future<User.Public> {
+        user.password = try BCrypt.hash(user.password)
+        return user.save(on: req).convertToPublic()
     }
     
-    // 1
-    func getAllHandler(_ req: Request) throws -> Future<[User]> {
-        // 2
-        return User.query(on: req).all()
+    func getAllHandler(_ req: Request) throws -> Future<[User.Public]> {
+        return User.query(on: req).decode(data: User.Public.self).all()
     }
-    // 3
-    func getHandler(_ req: Request) throws -> Future<User> {
-        // 4
-        return try req.parameters.next(User.self)
+
+    func getHandler(_ req: Request) throws -> Future<User.Public> {
+        return try req.parameters.next(User.self).convertToPublic()
     }
     
-    // 1
     func getAcronymsHandler(_ req: Request)
         throws -> Future<[Acronym]> {
-            // 2
             return try req
                 .parameters.next(User.self)
                 .flatMap(to: [Acronym].self) { user in
-                    // 3
                     try user.acronyms.query(on: req).all()
             }
+    }
+    
+    func loginHandler(_ req: Request) throws -> Future<Token> {
+        let user = try req.requireAuthenticated(User.self)
+        let token = try Token.generate(for: user)
+        return token.save(on: req)
     }
 }

@@ -31,19 +31,26 @@
      XCTAssertEqual(categories[0].id, category.id)
    }
 
-   func testCategoryCanBeSavedWithAPI() throws {
-     let category = Category(name: categoryName)
-     let receivedCategory = try app.getResponse(to: categoriesURI, method: .POST, headers: ["Content-Type": "application/json"], data: category, decodeTo: Category.self)
-
-     XCTAssertEqual(receivedCategory.name, categoryName)
-     XCTAssertNotNil(receivedCategory.id)
-
-     let categories = try app.getResponse(to: categoriesURI, decodeTo: [App.Category].self)
-
-     XCTAssertEqual(categories.count, 1)
-     XCTAssertEqual(categories[0].name, categoryName)
-     XCTAssertEqual(categories[0].id, receivedCategory.id)
-   }
+    func testCategoryCanBeSavedWithAPI() throws {
+        let category = Category(name: categoryName)
+        
+        let receivedCategory = try app.getResponse(
+            to: categoriesURI,
+            method: .POST,
+            headers: ["Content-Type": "application/json"],
+            data: category,
+            decodeTo: Category.self,
+            loggedInRequest: true)
+        
+        XCTAssertEqual(receivedCategory.name, categoryName)
+        XCTAssertNotNil(receivedCategory.id)
+        
+        let categories = try app.getResponse(to: categoriesURI, decodeTo: [App.Category].self)
+        
+        XCTAssertEqual(categories.count, 1)
+        XCTAssertEqual(categories[0].name, categoryName)
+        XCTAssertEqual(categories[0].id, receivedCategory.id)
+    }
 
    func testGettingASingleCategoryFromTheAPI() throws {
      let category = try Category.create(name: categoryName, on: conn)
@@ -53,24 +60,27 @@
      XCTAssertEqual(returnedCategory.id, category.id)
    }
 
-   func testGettingACategoriesAcronymsFromTheAPI() throws {
-     let acronymShort = "OMG"
-     let acronymLong = "Oh My God"
-     let acronym = try Acronym.create(short: acronymShort, long: acronymLong, on: conn)
-     let acronym2 = try Acronym.create(on: conn)
-
-     let category = try Category.create(name: categoryName, on: conn)
-
-     _ = try app.sendRequest(to: "/api/acronyms/\(acronym.id!)/categories/\(category.id!)", method: .POST)
-     _ = try app.sendRequest(to: "/api/acronyms/\(acronym2.id!)/categories/\(category.id!)", method: .POST)
-
-     let acronyms = try app.getResponse(to: "\(categoriesURI)\(category.id!)/acronyms", decodeTo: [Acronym].self)
-
-     XCTAssertEqual(acronyms.count, 2)
-     XCTAssertEqual(acronyms[0].id, acronym.id)
-     XCTAssertEqual(acronyms[0].short, acronymShort)
-     XCTAssertEqual(acronyms[0].long, acronymLong)
-   }
+    func testGettingACategoriesAcronymsFromTheAPI() throws {
+        let acronymShort = "OMG"
+        let acronymLong = "Oh My God"
+        let acronym = try Acronym.create(short: acronymShort, long: acronymLong, on: conn)
+        let acronym2 = try Acronym.create(on: conn)
+        
+        let category = try Category.create(name: categoryName, on: conn)
+        
+        let acronym1URL = "/api/acronyms/\(acronym.id!)/categories/\(category.id!)"
+        _ = try app.sendRequest(to: acronym1URL, method: .POST, loggedInRequest: true)
+        
+        let acronym2URL = "/api/acronyms/\(acronym2.id!)/categories/\(category.id!)"
+        _ = try app.sendRequest(to: acronym2URL, method: .POST, loggedInRequest: true)
+        
+        let acronyms = try app.getResponse(to: "\(categoriesURI)\(category.id!)/acronyms", decodeTo: [Acronym].self)
+        
+        XCTAssertEqual(acronyms.count, 2)
+        XCTAssertEqual(acronyms[0].id, acronym.id)
+        XCTAssertEqual(acronyms[0].short, acronymShort)
+        XCTAssertEqual(acronyms[0].long, acronymLong)
+    }
 
    static let allTests = [
      ("testCategoriesCanBeRetrievedFromAPI", testCategoriesCanBeRetrievedFromAPI),
