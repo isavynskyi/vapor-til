@@ -20,6 +20,7 @@ public func configure(
     var middlewares = MiddlewareConfig()
     middlewares.use(FileMiddleware.self)
     middlewares.use(ErrorMiddleware.self)
+    middlewares.use(SessionsMiddleware.self)
     services.register(middlewares)
     // Configure a database
     var databases = DatabasesConfig()
@@ -54,7 +55,7 @@ public func configure(
     databases.add(database: database, as: .psql)
     services.register(databases)
     
-    let serverConfigure = NIOServerConfig.default(hostname: "0.0.0.0", port: 9090)
+    let serverConfigure = NIOServerConfig.default(hostname: "0.0.0.0", port: 8080)
     services.register(serverConfigure)
     
     var migrations = MigrationConfig()
@@ -70,6 +71,7 @@ public func configure(
     commandConfig.useFluentCommands()
     services.register(commandConfig)
     config.prefer(LeafRenderer.self, for: ViewRenderer.self)
+    config.prefer(MemoryKeyedCache.self, for: KeyedCache.self)
 }
 
 
