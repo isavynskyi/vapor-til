@@ -20,11 +20,7 @@ extension Category {
         return siblings()
     }
     
-    static func addCategory(
-        _ name: String,
-        to acronym: Acronym,
-        on req: Request
-        ) throws -> Future<Void> {
+    static func addCategory(_ name: String, to acronym: Acronym, on req: Request) throws -> Future<Void> {
         return Category.query(on: req)
             .filter(\.name == name)
             .first()
