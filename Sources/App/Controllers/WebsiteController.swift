@@ -347,9 +347,9 @@ struct RegisterData: Content {
 extension RegisterData: Validatable, Reflectable {
     static func validations() throws -> Validations<RegisterData> {
         var validations = Validations(RegisterData.self)
-        try validations.add(\.name, .ascii)
-        try validations.add(\.username, .alphanumeric && .count(3...))
-        try validations.add(\.password, .count(8...))
+        try! validations.add(\.name, .ascii)
+        try! validations.add(\.username, .alphanumeric && .count(3...))
+        try! validations.add(\.password, .count(8...))
         
         validations.add("passwords match") { model in
             guard model.password == model.confirmPassword else {
