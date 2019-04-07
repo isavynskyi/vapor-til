@@ -65,6 +65,7 @@ public func configure(
     migrations.add(model: AcronymCategoryPivot.self, database: .psql)
     migrations.add(model: Token.self, database: .psql)
     migrations.add(migration: AdminUser.self, database: .psql)
+    migrations.add(migration: AddTwitterURLToUser.self, database: .psql)
     services.register(migrations)
     
     var commandConfig = CommandConfig.default()
